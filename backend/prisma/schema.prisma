@@ -48,6 +48,7 @@ model Hotel {
   manager   User     @relation(fields: [managerId], references: [id], onDelete: Cascade)
 
   rooms     Room[]
+  @@unique([name, address])
 }
 
 model Room {
