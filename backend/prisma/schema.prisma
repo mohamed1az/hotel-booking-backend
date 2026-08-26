@@ -13,12 +13,6 @@ enum Role {
   ADMIN
 }
 
-enum RoomType {
-  SINGLE
-  DOUBLE
-  TRIPLE
-}
-
 enum BookingStatus {
   PENDING
   CONFIRMED
@@ -26,55 +20,70 @@ enum BookingStatus {
 }
 
 model User {
-  id        String    @id @default(uuid())
+  id        String   @id @default(uuid())
   name      String
-  email     String    @unique
+  email     String   @unique
   password  String
-  role      Role      @default(USER)
-  createdAt DateTime  @default(now())
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
 
-
-  hotels    Hotel[]  
-  bookings  Booking[]
+  hotels   Hotel[]
+  bookings Booking[]
 }
 
 model Hotel {
   id        String   @id @default(uuid())
   name      String
   address   String
+  images    String[] // ضفنا مصفوفة الصور للفندق نفسه
   createdAt DateTime @default(now())
 
   managerId String
-  manager   User     @relation(fields: [managerId], references: [id], onDelete: Cascade)
+  manager   User   @relation(fields: [managerId], references: [id], onDelete: Cascade)
 
-  rooms     Room[]
+  roomTypes RoomType[]
+
   @@unique([name, address])
 }
 
-model Room {
+model RoomType {
   id            String   @id @default(uuid())
-  roomNumber    String   
-  type          RoomType @default(SINGLE)
-  pricePerNight Float    
-  isAvailable   Boolean  @default(true)
-  
-  hotelId       String
-  hotel         Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  title         String   // مثال: "Deluxe Ocean View"
+  description   String?  
+  pricePerNight Float
+  capacity      Int      @default(2)
+  images        String[] // صور فئة الغرفة
 
-  bookings      Booking[] 
+  hotelId String
+  hotel   Hotel  @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+
+  rooms Room[] // عدد الغرف بيتحسب تلقائياً من طول القائمة دي (rooms.length)
+}
+
+model Room {
+  id          String  @id @default(uuid())
+  roomNumber  String  
+  isAvailable Boolean @default(true)
+
+  roomTypeId String
+  roomType   RoomType @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
+
+  bookings Booking[]
+
+  @@unique([roomTypeId, roomNumber])
 }
 
 model Booking {
   id         String        @id @default(uuid())
-  checkIn    DateTime     
-  checkOut   DateTime     
-  totalPrice Float         
+  checkIn    DateTime
+  checkOut   DateTime
+  totalPrice Float
   status     BookingStatus @default(PENDING)
   createdAt  DateTime      @default(now())
 
-  userId     String
-  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  roomId     String
-  room       Room          @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  roomId String
+  room   Room   @relation(fields: [roomId], references: [id], onDelete: Cascade)
 }

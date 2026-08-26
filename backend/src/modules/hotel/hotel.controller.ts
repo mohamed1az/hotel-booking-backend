@@ -2,10 +2,15 @@ import { Request,Response } from "express"
 import { AppError } from "../../utils/AppError.js"
 import {createHotelService,deleteHotelService,getAllHotelService,updateHotelService,getHotelByIdService} from "./hotel.service.js"
 import { asyncHandler } from "../../middlewares/asyncHandler.js"
+import multer from "multer"
 
 export const addHotel=asyncHandler(async(req:Request,res:Response)=>{
     const managerId=(req as any).user.id;
-    const hotel=await createHotelService(req.body,managerId);
+    const files = req.files as Express.Multer.File[];
+    const imageUrls=files?.map(
+        (file) => `${req.protocol}://${req.get('host')}/uploads/${file.filename}`
+    )|| [];
+    const hotel=await createHotelService(req.body,imageUrls,managerId);
     res.status(201).json({
         status:"success",
         data:{hotel}
@@ -36,7 +41,11 @@ export const getHotels=asyncHandler(async(req:Request,res:Response)=>{
 export const updateHotel=asyncHandler(async(req:Request,res:Response)=>{
     const hotelId=(req as any).params.hotelId;
     const user=(req as any).user;
-    const hotel= await updateHotelService(req.body,hotelId,user);
+    const files=req.files as Express.Multer.File[];
+    const imageUrls=files?.map(
+        file=>`${req.protocol}://${req.get('host')}/uploads/${file.filename}`
+    )
+    const hotel= await updateHotelService(req.body,imageUrls,hotelId,user);
     res.status(200).json({
         status:"success",
         data:{hotel}

@@ -14,7 +14,7 @@ interface GetHotelsParams {
     search?: string;
 }
 
-export const createHotelService=async(data:addHotelType,managerId:string)=>{
+export const createHotelService=async(data:addHotelType,imageUrls:string[],managerId:string)=>{
     const isExist=await prisma.hotel.findFirst({
         where:{
             name:data.name,
@@ -26,7 +26,9 @@ export const createHotelService=async(data:addHotelType,managerId:string)=>{
     }
     const hotel=await prisma.hotel.create({
         data:{
-            ...data,
+            name:data.name,
+            address:data.address,
+            images:imageUrls,
             managerId
         }
     });
@@ -82,7 +84,7 @@ export const getAllHotelService=async({page,limit,search}:GetHotelsParams)=>{
     
 };
 
-export const updateHotelService=async(data:Prisma.HotelUpdateInput,hotelId:string,user:userData)=>{
+export const updateHotelService=async(data:Prisma.HotelUpdateInput,imagesUrls:string[]|undefined,hotelId:string,user:userData)=>{
     const hotel= await prisma.hotel.findUnique({
         where:{
             id:hotelId,
@@ -97,11 +99,19 @@ export const updateHotelService=async(data:Prisma.HotelUpdateInput,hotelId:strin
         throw new AppError("You do not have permission to update this hotel", 403);
     }
 
+    let finalImages=hotel.images;
+    if(imagesUrls && imagesUrls.length>0){
+        finalImages = imagesUrls;
+    }
+
     const updatedHotel=await prisma.hotel.update({
         where:{
             id:hotelId,
         },
-        data: data
+        data:{
+            ...data,
+            images:finalImages
+        }
     })
     return updatedHotel;
 }
@@ -112,7 +122,20 @@ export const getHotelByIdService = async (hotelId: string) => {
             id: hotelId
         },
         include: {
-            rooms: true 
+            manager:{
+                select:{
+                    id:true,
+                    name:true,
+                    email:true
+                }
+            },
+            roomTypes:{
+                include:{
+                    _count:{
+                        select: { rooms: true }
+                    }
+                }
+            }
         }
     });
 

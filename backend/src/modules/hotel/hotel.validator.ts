@@ -9,6 +9,9 @@ export const addHotelSchema=z.object({
         .trim()
         .min(1)
         .max(100),
+    images: z.array(z.string().url("Each image must be a valid URL"))
+        .optional()
+        .default([])
 
 })
 
