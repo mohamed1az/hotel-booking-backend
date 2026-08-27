@@ -1,8 +1,8 @@
 import {prisma} from "../../config/db.js"
 import {AppError} from "../../utils/AppError.js"
 import { Prisma } from "@prisma/client";
-import { addRoomType, updateRoomType } from "./room.validator.js"
-import { Request,Response } from "express"
+import { addRoomType, updateRoomType } from "./roomType.validator.js"
+
 
 interface userData{
     id:string

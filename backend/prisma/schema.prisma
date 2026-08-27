@@ -35,7 +35,7 @@ model Hotel {
   id        String   @id @default(uuid())
   name      String
   address   String
-  images    String[] // ضفنا مصفوفة الصور للفندق نفسه
+  images    String[] 
   createdAt DateTime @default(now())
 
   managerId String
@@ -48,16 +48,16 @@ model Hotel {
 
 model RoomType {
   id            String   @id @default(uuid())
-  title         String   // مثال: "Deluxe Ocean View"
+  title         String   
   description   String?  
   pricePerNight Float
   capacity      Int      @default(2)
-  images        String[] // صور فئة الغرفة
+  images        String[] 
 
   hotelId String
   hotel   Hotel  @relation(fields: [hotelId], references: [id], onDelete: Cascade)
 
-  rooms Room[] // عدد الغرف بيتحسب تلقائياً من طول القائمة دي (rooms.length)
+  rooms Room[] 
 }
 
 model Room {

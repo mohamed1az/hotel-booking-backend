@@ -4,7 +4,7 @@ import {addRoomType,getAllRoomType,
     deleteRoomType
 } from "./roomType.controller.js"
 import { validate } from "../../middlewares/validator.js";
-import {RoomTypeSchema,updatRoomTypeSchema} from "./room.validator.js"
+import {RoomTypeSchema,updatRoomTypeSchema} from "./roomType.validator.js"
 import {upload} from "../../middlewares/upload.js"
 import { restrictTo } from "../../middlewares/restrictTo.js";
 import { protect } from "../../middlewares/protect.js";
