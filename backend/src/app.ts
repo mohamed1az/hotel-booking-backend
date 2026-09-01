@@ -5,6 +5,7 @@ import authRouter from "./modules/auth/auth.routes.js"
 import hotelRouter from "./modules/hotel/hotel.routes.js"
 import roomTypeRouter from "./modules/RoomType/roomType.routes.js"
 import roomRouter from "./modules/room/room.routes.js"
+import bookingRouter from "./modules/booking/booking.routes.js"
 const app = express();
 
 app.use(cors());
@@ -15,4 +16,5 @@ app.use('/api/auth',authRouter)
 app.use('/api/hotel',hotelRouter)
 app.use('/api/room-types',roomTypeRouter)
 app.use('/api/rooms',roomRouter)
+app.use('/api/bookings',bookingRouter)
 export default app;
