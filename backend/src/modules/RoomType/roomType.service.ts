@@ -1,7 +1,8 @@
 import {prisma} from "../../config/db.js"
 import {AppError} from "../../utils/AppError.js"
-import { Prisma } from "@prisma/client";
+import { BookingStatus, Prisma } from "@prisma/client";
 import { addRoomType, updateRoomType } from "./roomType.validator.js"
+import { Cache } from "../../utils/cache.js";
 
 
 interface userData{
@@ -44,53 +45,70 @@ export const addRoomTypeService=async(data:addRoomType,imageUrls:string[],hotelI
             hotelId:hotelId
         }
     })
+    await Cache.delPattern(`roomTypes:hotel:${hotelId}:*`)
     return roomType;
 
 }
 
-export const getAllRoomTypeService=async(hotelId:string)=>{
-    // const hotel=await prisma.hotel.findUnique({
-    //     where:{
-    //         id:hotelId
-    //     }
-    // })
-    // if(!hotel){
-    //     throw new AppError("Hotel not found",404)
-    // }
-    
-    // const RoomTypes=await prisma.roomType.findMany({
-    //     where:{
-    //         hotelId:hotelId
-    //     }
-    // })
-    const hotel =await prisma.hotel.findUnique({
-        where:{id:hotelId},
-        include:{
-            roomTypes:{
-                include: {
-                    _count: { select: { rooms: true } }
+export const getAllRoomTypeService=async(hotelId:string,params?:{checkIn?:string;checkOut?:string})=>{
+    const { checkIn, checkOut } = params || {};
+    const roomFilter:any={isAvailable:true};
+    if (checkIn && checkOut) {
+        roomFilter.bookings = {
+        none: {
+            status: { in: [BookingStatus.CONFIRMED, BookingStatus.PENDING] },
+            AND: [
+            { checkIn: { lt: new Date(checkOut) } },
+            { checkOut: { gt: new Date(checkIn) } },
+            ],
+        },
+        };
+    }
+    const cacheKey=`roomTypes:hotel:${hotelId}:checkIn=${checkIn || ''}:checkOut=${checkOut || ''}`
+
+    const hotel = await Cache.remember(cacheKey,600,async()=>{
+        const result= await prisma.hotel.findUnique({
+            where:{id:hotelId},
+            include:{
+                roomTypes:{
+                    include: {
+                        rooms: {
+                            where: roomFilter,
+                            select: { id: true, roomNumber: true },
+                        },
+                        _count: { select: { rooms: true } }
+                    }
                 }
             }
+        })
+        if(!result){
+            throw new AppError("Hotel not found",404)
         }
-    })
+        return result.roomTypes.map((rt) => ({
+            ...rt,
+            availableRoomsCount: rt.rooms.length,
+        }));
+    }) 
 
-    if(!hotel){
-        throw new AppError("Hotel not found",404)
-    }
-    return hotel.roomTypes;
+    
+    return hotel;
 }
 
 export const getRoomTypeByIdService=async(roomTypeId:string)=>{
-    const roomType=await prisma.roomType.findUnique({
-        where:{id:roomTypeId},
-        include:{
-             _count:{ select: { rooms: true } }
+    const cacheKey=`roomType:${roomTypeId}`
+    const roomType= await Cache.remember(cacheKey,600,async()=>{
+        const result= await prisma.roomType.findUnique({
+            where:{id:roomTypeId},
+            include:{
+                _count:{ select: { rooms: true } }
+            }
+        })
+        if(!result){
+            throw new AppError("room type not found",404)
         }
-    })
+        return result;
+    }) 
 
-    if(!roomType){
-        throw new AppError("room type not found",404)
-    }
     return roomType;
 }
 
@@ -118,6 +136,11 @@ export const updatRoomTypeService=async(data:updateRoomType,imageUrls:string[],r
         }
     })
 
+    await Promise.all([
+        Cache.del(`roomType:${roomTypeId}`),
+        Cache.delPattern(`roomTypes:hotel:${updatedRoomType.hotelId}:*`)
+    ])
+
     return updatedRoomType;
 
 }
@@ -139,5 +162,9 @@ export const deleteRoomTypeService=async(roomTypeId:string,user:userData)=>{
             id:roomTypeId
         }
     })
+    await Promise.all([
+        Cache.del(`roomType:${roomTypeId}`),
+        Cache.delPattern(`roomTypes:hotel:${roomType.hotelId}:*`)
+    ])
     return true;
 }

@@ -44,6 +44,8 @@ model Hotel {
   roomTypes RoomType[]
 
   @@unique([name, address])
+  @@index([name])
+  @@index([address])
 }
 
 model RoomType {
@@ -58,6 +60,7 @@ model RoomType {
   hotel   Hotel  @relation(fields: [hotelId], references: [id], onDelete: Cascade)
 
   rooms Room[] 
+  @@index([hotelId])
 }
 
 model Room {
@@ -71,6 +74,7 @@ model Room {
   bookings Booking[]
 
   @@unique([roomTypeId, roomNumber])
+  @@index([roomTypeId,isAvailable])
 }
 
 model Booking {
@@ -86,4 +90,5 @@ model Booking {
 
   roomId String
   room   Room   @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  @@index([roomId, status, checkIn, checkOut])
 }

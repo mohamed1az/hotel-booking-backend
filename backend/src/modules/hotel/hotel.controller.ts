@@ -30,7 +30,9 @@ export const getHotels=asyncHandler(async(req:Request,res:Response)=>{
     const page=Number(req.query.page)||1
     const limit=Number(req.query.limit)||8
     const search = req.query.search as string;
-    const result= await getAllHotelService({page,limit,search});
+    const checkIn = req.query.checkIn as string;
+    const checkOut=req.query.checkOut as string;
+    const result= await getAllHotelService({page,limit,search, checkIn, checkOut});
 
     res.status(200).json({
         status:"success",
@@ -55,6 +57,9 @@ export const updateHotel=asyncHandler(async(req:Request,res:Response)=>{
 export const getHotelById=asyncHandler(async(req:Request,res:Response)=>{
     const hotelId=(req as any).params.hotelId;
     const hotel=await getHotelByIdService(hotelId)
+    if(hotel===null){
+        throw new AppError('hotel not found',404)
+    }
     res.status(200).json({
         status:"success",
         data:{hotel}

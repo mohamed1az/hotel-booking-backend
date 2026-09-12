@@ -1,6 +1,7 @@
 import {prisma} from "../../config/db.js"
 import {roomSchemaType,updateRoomSchemaType} from "./room.validator.js"
 import { AppError } from "../../utils/AppError.js"
+import { Cache } from "../../utils/cache.js"
 interface userData{
     id:string
     role:string
@@ -42,25 +43,36 @@ export const addRoomService=async(data:roomSchemaType,roomTypeId:string,user:use
         }
     })
 
+    await Promise.all([
+        Cache.delPattern(`rooms:roomType:${roomTypeId}:*`),
+        Cache.delPattern(`roomTypes:hotel:${roomType.hotelId}:*`)
+    ])
+
     return room;
 
 }
 
 export const getRoomByIdService=async(roomId:string)=>{
-    const room= await prisma.room.findUnique({
-        where:{id:roomId},
-        include:{
-            roomType:{
-                include:{
-                    hotel:true
+    const cacheKey=`room:${roomId}`
+    
+    const room = await Cache.remember(cacheKey,600,async()=>{
+        const result = await prisma.room.findUnique({
+            where:{id:roomId},
+            include:{
+                roomType:{
+                    include:{
+                        hotel:true
+                    }
                 }
             }
+        })
+
+        if(!result){
+            throw new AppError("room not found",404)
         }
-    })
+        return result;
+    }) 
     
-    if(!room){
-        throw new AppError("room not found",404)
-    }
     return room
 }
 
@@ -98,6 +110,13 @@ export const updateRoomService=async(data:updateRoomSchemaType,roomId:string,use
         where:{id:roomId},
         data:{...data}
     })
+
+    await Promise.all([
+        Cache.del(`room:${roomId}`),
+        Cache.delPattern(`rooms:roomType:${room.roomTypeId}:*`),
+        Cache.delPattern(`roomTypes:hotel:${room.roomType.hotelId}:*`)
+    ])
+
     return updatedRoom;
 }
 
@@ -123,6 +142,12 @@ export const deleteRoomService=async(roomId:string,user:userData)=>{
     const deleatedRoom=await prisma.room.delete({
         where:{id:roomId}
     })
+    await Promise.all([
+        Cache.del(`room:${roomId}`),
+        Cache.delPattern(`rooms:roomType:${room.roomTypeId}:*`),
+        Cache.delPattern(`roomTypes:hotel:${room.roomType.hotelId}:*`)
+    ])
+
     return true;
 }
 
@@ -133,9 +158,17 @@ export const allRoomService=async(roomTypeId:string,isAvailable:string|undefined
         whereClause.isAvailable=isAvailable==='true'
     }
 
-    const rooms = await prisma.room.findMany({
-        where:whereClause
-    })
+    const cacheKey=`rooms:roomType:${roomTypeId}:available:${isAvailable ?? 'all'}`
+
+    const rooms =await Cache.remember(cacheKey,600,async()=>{
+        const result= await prisma.room.findMany({
+            where:whereClause
+        })
+        if(result.length === 0){
+            throw new AppError("no room found",404)
+        }
+        return result;
+    }) 
 
     return rooms;
 }

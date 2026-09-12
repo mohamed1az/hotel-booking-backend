@@ -26,7 +26,9 @@ export const addRoomType=asyncHandler(async(req:Request,res:Response)=>{
 
 export const getAllRoomType=asyncHandler(async(req:Request,res:Response)=>{
     const hotelId=(req as any).params.hotelId;
-    const roomsType=await getAllRoomTypeService(hotelId);
+    const checkIn = req.query.checkIn as string;
+    const checkOut = req.query.checkOut as string;
+    const roomsType=await getAllRoomTypeService(hotelId,{ checkIn, checkOut });
     
     res.status(200).json({
         status:"success",
