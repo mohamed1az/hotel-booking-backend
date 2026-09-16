@@ -1,0 +1,44 @@
+services:
+  app:
+    build: .
+    container_name: hotel_app
+    restart: always
+    ports:
+      - "5500:5400"
+    environment:
+      - PORT=5400
+      - DATABASE_URL=postgresql://postgres:password123@postgres_db:5432/hotel_db?schema=public
+      - REDIS_URL=redis://redis_cache:6379
+      - JWT_SECRET=${JWT_SECRET}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - FRONTEND_URL=${FRONTEND_URL}
+    depends_on:
+      - postgres_db
+      - redis_cache
+
+  postgres_db:
+    image: postgres:15-alpine
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: hotel_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis_cache:
+    image: redis:7-alpine
+    container_name: redis_cache
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+
+volumes:
+  pgdata:
+  redisdata:

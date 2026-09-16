@@ -1,10 +1,33 @@
+# Dependencies
 node_modules
+/node_modules
+
+# Build outputs (TypeScript compiled files)
+dist
+/dist
+build
+
 # Keep environment variables out of version control
 .env
+.env.local
+*.env
 
+# Prisma generated client
 /generated/prisma
 
+# Uploads directory
+uploads/
+
+# AI Agents and Editor Configs
 .agents
 .claude
 .windsurf
-uploads/
+.vscode/
+.idea/
+
+# Logs and OS system files
+*.log
+npm-debug.log*
+yarn-debug.log*
+.DS_Store
+Thumbs.db
