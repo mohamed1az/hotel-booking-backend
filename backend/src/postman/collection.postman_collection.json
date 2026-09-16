@@ -1,1 +1,446 @@
-{}
+{
+  "info": {
+    "_postman_id": "b48ce2e4-6b6c-4bc4-9cff-c7a875f23c30",
+    "name": "Hotel",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "55929880",
+    "_collection_link": "https://go.postman.co/collection/55929880-b48ce2e4-6b6c-4bc4-9cff-c7a875f23c30?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\":\"test\",\r\n    \"email\":\"test@test.com\",\r\n    \"password\": \"1234567\",\r\n    \"role\":\"USER\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5400/api/auth/register",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5400",
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login User",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5400/api/auth/login",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5400",
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Hotels",
+      "item": [
+        {
+          "name": "Get Hotel By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": ""
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Hotel",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5400/api/hotel/0",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5400",
+              "path": [
+                "api",
+                "hotel",
+                "0"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Hotels",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5400/api/hotel",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5400",
+              "path": [
+                "api",
+                "hotel"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Hotel",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5400/api/hotel",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5400",
+              "path": [
+                "api",
+                "hotel"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Hotel",
+          "request": {
+            "auth": {
+              "type": "bearer"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "",
+                "value": ""
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\":\"dahb\",\r\n    \"address\":\"assuit\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5400/api/hotel",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5400",
+              "path": [
+                "api",
+                "hotel"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Room Types",
+      "item": [
+        {
+          "name": "Delete Room Type",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5400/api/room-types",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5400",
+              "path": [
+                "api",
+                "room-types"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Room Type",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5400/api/room-types/a27b9446-9285-42fd-b865-d65839bb878d",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5400",
+              "path": [
+                "api",
+                "room-types",
+                "a27b9446-9285-42fd-b865-d65839bb878d"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Room Type By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5400/api/room-types/",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5400",
+              "path": [
+                "api",
+                "room-types",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Room Types By Hotel",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5400/api/room-types/hotel/522df574-0684-48e8-8ceb-e266de3d886e",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5400",
+              "path": [
+                "api",
+                "room-types",
+                "hotel",
+                "522df574-0684-48e8-8ceb-e266de3d886e"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Room Type",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": ""
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Rooms",
+      "item": [
+        {
+          "name": "Get Rooms By Room Type",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5400/api/rooms/room-type/221c7066-1234-4a4e-be1f-a9a68fcf7c09?isAvailable=true",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5400",
+              "path": [
+                "api",
+                "rooms",
+                "room-type",
+                "221c7066-1234-4a4e-be1f-a9a68fcf7c09"
+              ],
+              "query": [
+                {
+                  "key": "isAvailable",
+                  "value": "true"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Room",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5400/api/rooms/501009cf-9f58-4929-8f77-2f664e9f0eed",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5400",
+              "path": [
+                "api",
+                "rooms",
+                "501009cf-9f58-4929-8f77-2f664e9f0eed"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Room",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": ""
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Room",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": ""
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Room By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": ""
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Bookings",
+      "item": [
+        {
+          "name": "Get Booking By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5400/api/bookings/",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5400",
+              "path": [
+                "api",
+                "bookings",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Booking",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": ""
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Bookings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": ""
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Booking",
+          "request": {
+            "auth": {
+              "type": "bearer"
+            },
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": ""
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "New Request",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": ""
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
