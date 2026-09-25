@@ -1,11 +1,20 @@
-#  Hotel Booking API
+# Hotel Booking API
+
+[![Node.js](https://img.shields.io/badge/Node.js-20-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Express](https://img.shields.io/badge/Express-5-000000?logo=express&logoColor=white)](https://expressjs.com)
+[![Prisma](https://img.shields.io/badge/Prisma-ORM-2D3748?logo=prisma&logoColor=white)](https://www.prisma.io)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org)
+[![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis&logoColor=white)](https://redis.io)
+[![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com)
+[![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](LICENSE)
 
 A production-style REST API for a hotel booking platform, built with **Node.js, TypeScript, Express 5, Prisma & PostgreSQL**.
 It covers the full flow: authentication → hotels → room types → rooms → bookings → Stripe payments, with Redis caching, distributed locking and rate limiting on top.
 
 ---
 
-##  Features
+## Features
 
 - **JWT Authentication** — register / login with hashed passwords (bcrypt)
 - **Role-Based Access Control** — `ADMIN`, `HOTEL_MANAGER` and regular users via a `restrictTo` middleware
@@ -22,7 +31,7 @@ It covers the full flow: authentication → hotels → room types → rooms → 
 
 ---
 
-##  Tech Stack
+## Tech Stack
 
 | Layer | Technology |
 |---|---|
@@ -40,7 +49,7 @@ It covers the full flow: authentication → hotels → room types → rooms → 
 
 ---
 
-##  Project Structure
+## Project Structure
 
 ```
 backend/
@@ -85,7 +94,7 @@ routes  →  validator  →  controller  →  service  →  prisma
 
 ---
 
-##  Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -95,11 +104,17 @@ routes  →  validator  →  controller  →  service  →  prisma
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/<your-username>/<your-repo>.git
-cd <your-repo>/backend
+git clone https://github.com/mohamed1az/hotel-booking-backend.git
+cd hotel-booking-backend/backend
 ```
 
 ### 2. Create a `.env` file
+
+Copy `.env.example` to `.env` and fill in your own values:
+
+```bash
+cp .env.example .env
+```
 
 ```env
 PORT=5400
@@ -152,7 +167,7 @@ API runs at **http://localhost:5400**
 
 ---
 
-##  Available Scripts
+## Available Scripts
 
 | Script | Description |
 |---|---|
@@ -164,7 +179,7 @@ API runs at **http://localhost:5400**
 
 ---
 
-##  API Endpoints
+## API Endpoints
 
 Base URL: `http://localhost:5500`
 
@@ -225,7 +240,7 @@ Base URL: `http://localhost:5500`
 
 ---
 
-##  Authentication
+## Authentication
 
 Protected routes expect a Bearer token:
 
@@ -235,7 +250,7 @@ Authorization: Bearer <your_jwt_token>
 
 ---
 
-##  Testing Stripe Webhooks Locally
+## Testing Stripe Webhooks Locally
 
 ```bash
 stripe login
@@ -248,7 +263,7 @@ The webhook route is mounted **before** `express.json()` so Stripe receives the 
 
 ---
 
-##  Implementation Notes
+## Implementation Notes
 
 - **Caching** — read-heavy endpoints use `Cache.remember(key, ttl, fetchFn)`; writes invalidate related keys with `Cache.delPattern`.
 - **Locking** — booking creation acquires a Redlock lock on the room/date range so two concurrent requests can't book the same room.
@@ -257,7 +272,7 @@ The webhook route is mounted **before** `express.json()` so Stripe receives the 
 
 ---
 
-##  Roadmap
+## Roadmap
 
 - [ ] Unit & integration tests (Jest + Supertest)
 - [ ] Swagger / OpenAPI documentation
@@ -265,5 +280,4 @@ The webhook route is mounted **before** `express.json()` so Stripe receives the 
 - [ ] Reviews & ratings module
 - [ ] CI/CD pipeline with GitHub Actions
 - [ ] Frontend client
-
 
