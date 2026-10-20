@@ -55,13 +55,13 @@ export const getAllRoomTypeService=async(hotelId:string,params?:{checkIn?:string
     const roomFilter:any={isAvailable:true};
     if (checkIn && checkOut) {
         roomFilter.bookings = {
-        none: {
-            status: { in: [BookingStatus.CONFIRMED, BookingStatus.PENDING] },
-            AND: [
-            { checkIn: { lt: new Date(checkOut) } },
-            { checkOut: { gt: new Date(checkIn) } },
-            ],
-        },
+            none: {
+                status: { in: [BookingStatus.CONFIRMED, BookingStatus.PENDING] },
+                AND: [
+                { checkIn: { lt: new Date(checkOut) } },
+                { checkOut: { gt: new Date(checkIn) } },
+                ],
+            },
         };
     }
     const cacheKey=`roomTypes:hotel:${hotelId}:checkIn=${checkIn || ''}:checkOut=${checkOut || ''}`
@@ -90,7 +90,6 @@ export const getAllRoomTypeService=async(hotelId:string,params?:{checkIn?:string
         }));
     }) 
 
-    
     return hotel;
 }
 
@@ -123,6 +122,21 @@ export const updatRoomTypeService=async(data:updateRoomType,imageUrls:string[],r
     
     if(user.role!=='ADMIN'&&user.id!==roomType.hotel.managerId){
         throw new AppError("You do not have permission to update this room type", 403);
+    }
+
+  
+    if (data.title && data.title !== roomType.title) {
+        const existingRoomType = await prisma.roomType.findFirst({
+            where: {
+                hotelId: roomType.hotelId,
+                title: data.title,
+                NOT: { id: roomTypeId }
+            }
+        });
+
+        if (existingRoomType) {
+            throw new AppError("A room type with this title already exists in this hotel", 400);
+        }
     }
 
     const updatedRoomType = await prisma.roomType.update({

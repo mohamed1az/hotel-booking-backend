@@ -1,5 +1,5 @@
 import { redis } from "./redis.js";
-import Redlock from 'redlock';
+import Redlock from "redlock"
 
 
 

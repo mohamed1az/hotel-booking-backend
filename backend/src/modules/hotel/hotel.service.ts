@@ -89,7 +89,7 @@ export const getAllHotelService=async({page,limit,search,checkIn,checkOut}:GetHo
                 }
             }
         }
-        where.roomType={
+        where.roomTypes={
             some:{
                 rooms:{some:isRoomAvailable}
             }
@@ -123,62 +123,79 @@ export const getAllHotelService=async({page,limit,search,checkIn,checkOut}:GetHo
   
 };
 
-export const updateHotelService=async(data:Prisma.HotelUpdateInput,imagesUrls:string[]|undefined,hotelId:string,user:userData)=>{
-    const hotel= await prisma.hotel.findUnique({
-        where:{
-            id:hotelId,
-        }
-    })
+export const updateHotelService = async (data: Prisma.HotelUpdateInput,imagesUrls: string[] | undefined,
+  hotelId: string,
+  user: userData
+) => {
 
-    if(!hotel){
-        throw new AppError("Hotel not found", 404);
+    const hotel = await prisma.hotel.findUnique({
+    where: {
+        id: hotelId,
+    },
+    });
+
+    if (!hotel) {
+    throw new AppError("Hotel not found", 404);
     }
 
-    if (user.role !== 'ADMIN' && hotel.managerId !== user.id) {
-        throw new AppError("You do not have permission to update this hotel", 403);
+    if (user.role !== "ADMIN" && hotel.managerId !== user.id) {
+    throw new AppError("You do not have permission to update this hotel", 403);
     }
 
-    let finalImages=hotel.images;
-    if(imagesUrls && imagesUrls.length>0){
-        finalImages = imagesUrls;
+    let finalImages = hotel.images;
+    if (imagesUrls && imagesUrls.length > 0) {
+    finalImages = imagesUrls;
     }
 
-    const updatedHotel=await prisma.hotel.update({
-        where:{
-            id:hotelId,
+    try {
+    const updatedHotel = await prisma.hotel.update({
+        where: {
+        id: hotelId,
         },
-        data:{
-            ...data,
-            images:finalImages
-        }
-    })
+        data: {
+        ...data,
+        images: finalImages,
+        },
+    });
+
+    await Promise.all([
+        Cache.del(`hotel:${hotelId}`),
+        Cache.delPattern("hotels:all:*"),
+    ]);
+
     return updatedHotel;
-}
+    } catch (error: any) {
+    if (error?.code === "P2002") {
+        throw new AppError("A hotel with this name and address already exists", 400);
+    }
+    throw error;
+    }
+};
 
 export const getHotelByIdService = async (hotelId: string) => {
     const cacheKey=`hotel:${hotelId}`;
     return await Cache.remember(cacheKey,600,async ()=>{
         return await prisma.hotel.findUnique({
-        where: {
-            id: hotelId
-        },
-        include: {
-            manager:{
-                select:{
-                    id:true,
-                    name:true,
-                    email:true
-                }
+            where: {
+                id: hotelId
             },
-            roomTypes:{
-                include:{
-                    _count:{
-                        select: { rooms: true }
+            include: {
+                manager:{
+                    select:{
+                        id:true,
+                        name:true,
+                        email:true
+                    }
+                },
+                roomTypes:{
+                    include:{
+                        _count:{
+                            select: { rooms: true }
+                        }
                     }
                 }
             }
-        }
-    });
+        });
     })
      
 };

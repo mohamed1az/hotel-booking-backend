@@ -8,6 +8,7 @@ import roomRouter from "./modules/room/room.routes.js";
 import bookingRouter from "./modules/booking/booking.routes.js";
 import stripeRouter from "./modules/stripe/stripe.routes.js"; // 1. استيراد راوتر Stripe
 import { globalLimiter , authLimiter } from "./middlewares/rateLimiter.js";
+import { errorHandler } from "./middlewares/errorHandler.js";
 const app = express();
 
 app.use(cors());
@@ -27,4 +28,5 @@ app.use('/api/rooms', roomRouter);
 app.use('/api/bookings', bookingRouter);
 app.use('/api/payments', stripeRouter); 
 
+app.use(errorHandler);
 export default app;

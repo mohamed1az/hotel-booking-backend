@@ -58,30 +58,32 @@ export const handleWebhookService = async (body: Buffer,signature: string) => {
         throw new AppError(`Webhook Error: ${err.message}`, 400);
     }
 
-    if(event.type==="checkout.session.completed"){
-        const session=event.data.object as Stripe.Checkout.Session;
-        const bookingId=session.client_reference_id;
-        if(bookingId){
-            const updatedBooking = await prisma.booking.update({
-                where:{id:bookingId},
-                data:{status:"CONFIRMED"},
-                include: {
-                    room: {
-                        select: {
-                            id: true,
-                            roomTypeId: true,
-                            roomType: { select: { hotelId: true } }
-                        }
-                    }
-                }
+    if (event.type === "checkout.session.completed") {
+        const session = event.data.object as Stripe.Checkout.Session;
+        const bookingId = session.client_reference_id;
+
+        if (bookingId && session.payment_status === "paid") {
+            const { count } = await prisma.booking.updateMany({
+                where: { id: bookingId, status: "PENDING" },
+                data: { status: "CONFIRMED" },
             });
-            await Promise.all([
-                Cache.delPattern(`rooms:roomType:${updatedBooking.room.roomTypeId}:*`),
-                Cache.delPattern(`roomTypes:hotel:${updatedBooking.room.roomType.hotelId}:*`),
-                Cache.delPattern(`user:bookings:${updatedBooking.userId}:*`)
-            ])
+
+            if (count > 0) {
+                const booking = await prisma.booking.findUnique({
+                    where: { id: bookingId },
+                    include: { room: { include: { roomType: true } } },
+                });
+                if (booking) {
+                    await Promise.all([
+                        Cache.del(`booking:${booking.id}`),
+                        Cache.del(`user:bookings:${booking.userId}`),
+                        Cache.delPattern(`rooms:roomType:${booking.room.roomTypeId}:*`),
+                        Cache.delPattern(`roomTypes:hotel:${booking.room.roomType.hotelId}:*`),
+                    ]);
+                }
+            }
+            
         }
-        
     }
   
     return { received: true };

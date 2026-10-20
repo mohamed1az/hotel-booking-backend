@@ -13,6 +13,10 @@ interface userData{
 export const createBookingService=async(data:bookingType,user:userData)=>{
     const checkInDate = parseISO(data.checkIn);
     const checkOutDate = parseISO(data.checkOut);
+
+    if (isBefore(checkOutDate, checkInDate) || checkOutDate.getTime() === checkInDate.getTime()) {
+        throw new AppError("Check-out date must be after check-in date", 400);
+    }
     const lockKey=`locks:room:${data.roomId}`
     let lock;
     try{
@@ -31,7 +35,7 @@ export const createBookingService=async(data:bookingType,user:userData)=>{
             }
         })
         if(!room){
-            throw new AppError("room not foun",404)
+            throw new AppError("room not found",404)
         }
 
         if(!room.isAvailable){

@@ -14,7 +14,7 @@ export const loginSchema=z.object({
 export const registerSchema=z.object({
     name:z.string()
         .trim()
-        .min(5)
+        .min(1)
         .max(30),
     email:z.string()
         .trim()
@@ -24,7 +24,7 @@ export const registerSchema=z.object({
         .trim()
         .min(7)
         .max(20),
-    role:z.enum(['USER','HOTEL_MANAGER'])
+    role:z.enum(['USER','HOTEL_MANAGER']).optional()
 })
 
 export type loginType = z.infer<typeof loginSchema>;
