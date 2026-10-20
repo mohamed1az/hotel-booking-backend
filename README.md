@@ -7,26 +7,30 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org)
 [![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis&logoColor=white)](https://redis.io)
 [![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com)
+[![Tested with Vitest](https://img.shields.io/badge/tested%20with-Vitest-6E9F18?logo=vitest&logoColor=white)](https://vitest.dev)
 [![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](LICENSE)
 
 A production-style REST API for a hotel booking platform, built with **Node.js, TypeScript, Express 5, Prisma & PostgreSQL**.
-It covers the full flow: authentication → hotels → room types → rooms → bookings → Stripe payments, with Redis caching, distributed locking and rate limiting on top.
+It covers the full flow: authentication → hotels → room types → rooms → bookings → Stripe payments, with Redis caching, distributed locking and rate limiting on top, and an integration test suite of 84 tests.
 
 ---
 
 ## Features
 
 - **JWT Authentication** — register / login with hashed passwords (bcrypt)
-- **Role-Based Access Control** — `ADMIN`, `HOTEL_MANAGER` and regular users via a `restrictTo` middleware
+- **Role-Based Access Control** — `ADMIN`, `HOTEL_MANAGER` and regular users via a `restrictTo` middleware, plus ownership checks (a manager can only change their own hotels)
 - **Hotels & Rooms Management** — full CRUD for hotels, room types and individual rooms
+- **Availability Search** — filter hotels and room types by check-in / check-out dates
 - **Image Uploads** — multipart uploads handled by Multer, served from `/uploads`
-- **Booking Engine** — create bookings, list your own bookings, view one, cancel
+- **Booking Engine** — create bookings, list your own bookings, view one, cancel (not allowed within 48 hours of check-in)
 - **Race-Condition Safe** — Redlock distributed locks prevent double-booking the same room
-- **Stripe Payments** — Checkout Session creation + webhook handling to confirm payments
+- **Server-Side Pricing** — the total price and the booking owner are computed on the server, never read from the request body
+- **Stripe Payments** — Checkout Session creation + a signature-verified webhook that confirms payments
 - **Redis Caching** — a small `Cache` helper with `get / set / delPattern / remember` (cache-aside pattern)
 - **Rate Limiting** — global limiter + a stricter limiter on auth routes, backed by Redis
 - **Validation** — every request body validated with Zod schemas through a `validate` middleware
 - **Centralized Error Handling** — custom `AppError` class + global error middleware + `asyncHandler` wrapper
+- **Automated Tests** — 84 integration tests with Vitest and Supertest (see [Running the Tests](#running-the-tests))
 - **Fully Dockerized** — one command brings up the API, PostgreSQL and Redis
 
 ---
@@ -45,6 +49,7 @@ It covers the full flow: authentication → hotels → room types → rooms → 
 | Validation | Zod |
 | Auth | JWT + bcrypt |
 | Uploads | Multer |
+| Testing | Vitest + Supertest |
 | Container | Docker & Docker Compose |
 
 ---
@@ -54,9 +59,10 @@ It covers the full flow: authentication → hotels → room types → rooms → 
 ```
 backend/
 ├── prisma/
+│   ├── migrations/
 │   └── schema.prisma
 ├── src/
-│   ├── config/                 # db / redis / stripe configuration
+│   ├── config/                 # db / redis / redlock / stripe configuration
 │   ├── middlewares/
 │   │   ├── asyncHandler.ts     # async wrapper, no try/catch everywhere
 │   │   ├── errorHandler.ts     # global error handler
@@ -65,7 +71,7 @@ backend/
 │   │   ├── restrictTo.ts       # role guard
 │   │   ├── upload.ts           # multer config
 │   │   └── validator.ts        # zod validation middleware
-│   ├── modules/
+│   ├── modules/                # each module has a *.routes.test.ts next to its routes
 │   │   ├── auth/               # controller · routes · service · validator
 │   │   ├── hotel/
 │   │   ├── RoomType/
@@ -74,6 +80,8 @@ backend/
 │   │   └── stripe/
 │   ├── postman/
 │   │   └── collection.postman_collection.json
+│   ├── tests/
+│   │   └── helpers.ts          # getAuthToken(): creates a user with a given role and logs in
 │   ├── types/
 │   ├── utils/
 │   │   ├── AppError.ts
@@ -81,8 +89,13 @@ backend/
 │   ├── app.ts                  # express app + middleware + routes
 │   └── server.ts               # entry point
 ├── uploads/
+├── .env.example
+├── .env.test.example
 ├── Dockerfile
 ├── docker-compose.yml
+├── tsconfig.json
+├── tsconfig.build.json         # production build (excludes tests)
+├── vitest.config.ts
 └── package.json
 ```
 
@@ -130,7 +143,7 @@ STRIPE_WEBHOOK_SECRET="whsec_xxx"
 FRONTEND_URL="http://localhost:3000"
 ```
 
->  Never commit your real `.env` — it is already listed in `.gitignore`.
+> Never commit your real `.env` — it is already listed in `.gitignore`.
 
 ### 3. Run with Docker (recommended)
 
@@ -167,13 +180,77 @@ API runs at **http://localhost:5400**
 
 ---
 
+## Running the Tests
+
+The suite is made of **integration tests**: every test sends real HTTP requests to the Express app with Supertest and talks to a real PostgreSQL and a real Redis. The only thing that is faked is Stripe, so no network calls and no real keys are needed (Stripe session creation is mocked, and webhook signatures are generated with Stripe's own test helper).
+
+> The tests delete all rows from the database and run `FLUSHALL` on Redis before each test. Never point `.env.test` at a database or a Redis instance you care about.
+
+### 1. Prepare the test environment
+
+Copy the example file (all values are placeholders) and make sure `DATABASE_URL` points to a separate test database:
+
+```bash
+cp .env.test.example .env.test
+```
+
+Start PostgreSQL and Redis, then create the test database:
+
+```bash
+docker compose up -d postgres_db redis_cache
+docker compose exec postgres_db psql -U postgres -c "CREATE DATABASE hotel_test_db;"
+```
+
+Apply the migrations to it:
+
+```bash
+# bash
+DATABASE_URL="postgresql://postgres:password123@localhost:5432/hotel_test_db?schema=public" npx prisma migrate deploy
+```
+
+```powershell
+# PowerShell
+$env:DATABASE_URL="postgresql://postgres:password123@localhost:5432/hotel_test_db?schema=public"; npx prisma migrate deploy
+```
+
+### 2. Run
+
+```bash
+npm test                                  # whole suite
+npx vitest run src/modules/booking        # a single module
+```
+
+Test files run one after another (not in parallel) because they share one database and one Redis instance.
+
+### What is covered
+
+| Module | Tests |
+|---|---|
+| Auth | 4 |
+| Hotels | 14 |
+| Room types | 18 |
+| Rooms | 20 |
+| Bookings | 17 |
+| Stripe | 11 |
+| **Total** | **84** |
+
+- **Auth** — registration and login, duplicate emails, wrong credentials.
+- **Access control** — role checks and ownership rules (`403`) on every write endpoint, including managers of other hotels and the admin override.
+- **Bookings** — date-overlap rules, maintenance rooms, cancelled bookings freeing the room, the 48-hour cancellation rule, server-side price calculation, and visibility rules for a single booking.
+- **Concurrency** — five users book the same room at the same moment and exactly one booking is created.
+- **Caching** — cached lists and bookings are refreshed after writes, and permissions are still enforced when a booking is served from cache.
+- **Stripe** — checkout amount sent in cents, other users' bookings never reach Stripe, webhook signature verification, repeated deliveries of the same event, and late payments never revive a cancelled booking.
+
+---
+
 ## Available Scripts
 
 | Script | Description |
 |---|---|
 | `npm run dev` | Start in watch mode with `tsx` |
-| `npm run build` | Compile TypeScript to `dist/` |
+| `npm run build` | Compile TypeScript to `dist/` (tests are excluded) |
 | `npm start` | Run the compiled build |
+| `npm test` | Run the test suite once with Vitest |
 | `npm run prisma:migrate` | Create & apply a migration |
 | `npm run prisma:studio` | Open Prisma Studio |
 
@@ -182,6 +259,8 @@ API runs at **http://localhost:5400**
 ## API Endpoints
 
 Base URL: `http://localhost:5500`
+
+"Manager" means a `HOTEL_MANAGER` acting on their own hotel; an `ADMIN` can act on any hotel.
 
 ### Auth — `/api/auth`
 
@@ -194,18 +273,18 @@ Base URL: `http://localhost:5500`
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| `POST` | `/` | Admin | Add a new hotel (with images) |
-| `GET` | `/` | Public | List all hotels |
+| `POST` | `/` | Admin / Manager | Add a new hotel (with images) |
+| `GET` | `/` | Public | List hotels (paginated). Query: `page`, `limit`, `search`, and `checkIn` + `checkOut` to keep only hotels with a free room |
 | `GET` | `/:hotelId` | Protected | Get a single hotel |
 | `PUT` | `/:hotelId` | Admin / Manager | Update a hotel |
-| `DELETE` | `/:hotelId` | Admin | Delete a hotel |
+| `DELETE` | `/:hotelId` | Admin / Manager | Delete a hotel |
 
 ### Room Types — `/api/room-types`
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
 | `POST` | `/hotel/:hotelId` | Admin / Manager | Create a room type (up to 5 images) |
-| `GET` | `/hotel/:hotelId` | Public | List room types of a hotel |
+| `GET` | `/hotel/:hotelId` | Public | List room types of a hotel with available room counts (optional `checkIn` / `checkOut`) |
 | `GET` | `/:roomTypeId` | Public | Get a single room type |
 | `PUT` | `/:roomTypeId` | Admin / Manager | Update a room type |
 | `DELETE` | `/:roomTypeId` | Admin / Manager | Delete a room type |
@@ -215,7 +294,7 @@ Base URL: `http://localhost:5500`
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
 | `POST` | `/:roomTypeId` | Admin / Manager | Add a room to a room type |
-| `GET` | `/room-type/:roomTypeId` | Public | List rooms of a room type |
+| `GET` | `/room-type/:roomTypeId` | Public | List rooms of a room type (optional `isAvailable=true`) |
 | `GET` | `/:roomId` | Public | Get a single room |
 | `PUT` | `/:roomId` | Admin / Manager | Update a room |
 | `DELETE` | `/:roomId` | Admin / Manager | Delete a room |
@@ -224,17 +303,17 @@ Base URL: `http://localhost:5500`
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| `POST` | `/` | Protected | Create a booking |
+| `POST` | `/` | Protected | Create a booking (`roomId`, `checkIn`, `checkOut`); the price is calculated on the server |
 | `GET` | `/my-bookings` | Protected | List the current user's bookings |
-| `GET` | `/:bookingId` | Protected | Get a single booking |
-| `PATCH` | `/:bookingId` | Protected | Cancel a booking |
+| `GET` | `/:bookingId` | Owner / hotel Manager / Admin | Get a single booking |
+| `PATCH` | `/:bookingId` | Owner | Cancel a booking (not allowed within 48 hours of check-in) |
 
 ### Payments — `/api/payments`
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| `POST` | `/create-checkout-session/:bookingId` | Protected | Create a Stripe Checkout Session |
-| `POST` | `/webhook` | Stripe | Stripe webhook (raw body) |
+| `POST` | `/create-checkout-session/:bookingId` | Owner | Create a Stripe Checkout Session for one of your `PENDING` bookings |
+| `POST` | `/webhook` | Stripe | Stripe webhook (raw body, signature-verified); confirms the booking |
 
 > A ready-to-import **Postman collection** lives at `src/postman/collection.postman_collection.json`.
 
@@ -250,14 +329,16 @@ Authorization: Bearer <your_jwt_token>
 
 ---
 
-## Testing Stripe Webhooks Locally
+## Testing Stripe Webhooks Manually
+
+The automated tests don't need this. To try the real flow against Stripe's test mode:
 
 ```bash
 stripe login
 stripe listen --forward-to localhost:5500/api/payments/webhook
 ```
 
-Copy the printed `whsec_...` value into `STRIPE_WEBHOOK_SECRET`.
+Copy the printed `whsec_...` value into `STRIPE_WEBHOOK_SECRET`, create a checkout session, and pay with the test card `4242 4242 4242 4242`.
 
 The webhook route is mounted **before** `express.json()` so Stripe receives the raw body required for signature verification.
 
@@ -265,8 +346,9 @@ The webhook route is mounted **before** `express.json()` so Stripe receives the 
 
 ## Implementation Notes
 
-- **Caching** — read-heavy endpoints use `Cache.remember(key, ttl, fetchFn)`; writes invalidate related keys with `Cache.delPattern`.
-- **Locking** — booking creation acquires a Redlock lock on the room/date range so two concurrent requests can't book the same room.
+- **Caching** — read-heavy endpoints use `Cache.remember(key, ttl, fetchFn)`; writes invalidate related keys with `Cache.del` and `Cache.delPattern`.
+- **Locking** — booking creation acquires a Redlock lock on the room (`locks:room:<id>`) for the whole availability check and insert, so two concurrent requests can't book the same room. The lock is always released in a `finally` block, even when the booking fails.
+- **Payments** — a booking is confirmed only by the signed webhook, never by the success redirect. The webhook moves a booking from `PENDING` to `CONFIRMED` only, so repeated or late events can't revive a cancelled booking.
 - **Errors** — throw `new AppError(message, statusCode)` anywhere; `asyncHandler` forwards it to the global `errorHandler`, which returns a consistent JSON shape.
 - **Layering** — controllers stay thin: they parse the request and delegate all business logic to services.
 
@@ -274,10 +356,11 @@ The webhook route is mounted **before** `express.json()` so Stripe receives the 
 
 ## Roadmap
 
-- [ ] Unit & integration tests (Jest + Supertest)
+- [x] Integration test suite with Vitest + Supertest (84 tests)
+- [ ] Unit tests for services and validators
+- [ ] CI pipeline with GitHub Actions (run the tests on every push)
+- [ ] Expire unpaid `PENDING` bookings so abandoned checkouts release their rooms
 - [ ] Swagger / OpenAPI documentation
 - [ ] Email notifications on booking confirmation
 - [ ] Reviews & ratings module
-- [ ] CI/CD pipeline with GitHub Actions
 - [ ] Frontend client
-
